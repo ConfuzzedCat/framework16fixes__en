@@ -1,42 +1,42 @@
 #!/bin/bash
 
-# Pfade definieren
+# Define paths
 ORIGINAL_FILE="/usr/share/alsa/ucm2/HDA/HiFi-analog.conf"
 CUSTOM_DIR="$HOME/.config/alsa/ucm2-custom"
 CUSTOM_FILE="$CUSTOM_DIR/HiFi-analog.conf"
 
 echo "--- Framework 16 UCM Transformer ---"
 
-# 1. Verzeichnis erstellen und Original kopieren
+# 1. Create directory and copy original
 mkdir -p "$CUSTOM_DIR"
 cp "$ORIGINAL_FILE" "$CUSTOM_FILE"
 
-# 2. Die Variable am Anfang der Datei von "Speaker" auf "Master" ändern
-# Dies sorgt dafür, dass PlaybackMixerElem etc. später "Master" nutzen.
+# 2. Change the variable at the beginning of the file from "Speaker" to "Master"
+# This ensures that PlaybackMixerElem etc. later use "Master".
 sed -i 's/Define.spkvol "Speaker"/Define.spkvol "Master"/g' "$CUSTOM_FILE"
-echo "[OK] Variable 'spkvol' auf 'Master' umgestellt."
+echo "[OK] Variable 'spkvol' switched to 'Master'."
 
-# 3. Die EnableSequence für Speaker und Bass Speaker auf 100% fixieren
-# Wir suchen die Switch-Befehle und fügen die Volume-Befehle direkt danach ein.
-# Das sorgt dafür, dass die Hardware aufgedreht wird, während GNOME nur den Master regelt.
+# 3. Fix the EnableSequence for Speakers and Bass Speakers to 100%
+# We locate the Switch commands and insert the Volume commands immediately afterwards.
+# This ensures that the hardware is turned on, while GNOME only regulates the master.
 
-# Für den Fall mit Bass Speaker (True-Zweig):
+# For the case with Bass Speaker (True branch):
 sed -i "/cset \"name='Speaker Playback Switch' on\"/a \					cset \"name='Speaker Playback Volume' 100%\"" "$CUSTOM_FILE"
 sed -i "/cset \"name='Bass Speaker Playback Switch' on\"/a \					cset \"name='Bass Speaker Playback Volume' 100%\"" "$CUSTOM_FILE"
 
-# Für den Fall ohne Bass Speaker (False-Zweig / Fallback):
+# For the case without bass speaker (false branch / fallback):
 sed -i "/cset \"name='\${var:spkvol} Playback Switch' on\"/a \					cset \"name='Speaker Playback Volume' 100%\"" "$CUSTOM_FILE"
 
-echo "[OK] Hardware-Kanäle (Speaker & Bass) in der EnableSequence auf 100% fixiert."
+echo "[OK] Hardware channels (Speaker & Bass) in the EnableSequence fixed to 100%."
 
-# 4. Abschluss-Instruktionen
+# 4. Final Instructions
 echo ""
-echo "--- Fertig! ---"
-echo "Die modifizierte Datei liegt unter: $CUSTOM_FILE"
+echo "--- Finished!---"
+echo "The modified file is under: $CUSTOM_FILE"
 echo ""
-echo "Um sie jetzt zu testen (ohne Neustart):"
+echo "To test them now (without restart):"
 echo "sudo mount --bind $CUSTOM_FILE $ORIGINAL_FILE"
 echo "systemctl --user restart pipewire wireplumber"
 echo ""
-echo "Um es permanent zu machen, füge diese Zeile in /etc/fstab ein:"
+echo "To make it permanent, paste this line in /etc/fstab:"
 echo "$CUSTOM_FILE $ORIGINAL_FILE none bind,defaults 0 0"
